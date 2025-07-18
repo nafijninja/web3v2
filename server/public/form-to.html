@@ -346,7 +346,7 @@
                     <div id="destinationInputs">
                         <div class="destination-input-group">
                             <input type="email" name="FROM_TO1" placeholder="Enter destination email address" required>
-                            <button type="button" class="add-btn" onclick="addDestinationInput()">+ Add</button>
+                            <button type="button" class="add-btn" onclick="addDestinationInput()" id="addBtn1">+ Add</button>
                         </div>
                     </div>
                 </div>
@@ -382,25 +382,29 @@
             
             const inputGroup = document.createElement('div');
             inputGroup.className = 'destination-input-group';
+            inputGroup.id = `inputGroup${destinationCount}`;
             inputGroup.innerHTML = `
                 <input type="email" name="FROM_TO${destinationCount}" placeholder="Enter destination email address">
-                <button type="button" class="remove-btn" onclick="removeDestinationInput(this)">- Remove</button>
+                <button type="button" class="remove-btn" onclick="removeDestinationInput(${destinationCount})">- Remove</button>
             `;
             
             container.appendChild(inputGroup);
             
-            // Update the add button
+            // Update all buttons
             updateAddButtons();
         }
 
-        function removeDestinationInput(button) {
+        function removeDestinationInput(groupNumber) {
             if (destinationCount <= 1) {
                 alert('At least one destination email is required');
                 return;
             }
 
-            button.parentElement.remove();
-            destinationCount--;
+            const groupToRemove = document.getElementById(`inputGroup${groupNumber}`);
+            if (groupToRemove) {
+                groupToRemove.remove();
+                destinationCount--;
+            }
             
             // Renumber the remaining inputs
             renumberInputs();
@@ -408,27 +412,59 @@
         }
 
         function renumberInputs() {
-            const inputs = document.querySelectorAll('#destinationInputs input[type="email"]');
-            inputs.forEach((input, index) => {
+            const inputGroups = document.querySelectorAll('#destinationInputs .destination-input-group');
+            destinationCount = inputGroups.length;
+            
+            inputGroups.forEach((group, index) => {
+                const input = group.querySelector('input[type="email"]');
+                const removeBtn = group.querySelector('.remove-btn');
+                
+                // Update group ID
+                group.id = `inputGroup${index + 1}`;
+                
+                // Update input name
                 input.name = `FROM_TO${index + 1}`;
+                
+                // Update remove button onclick if it exists
+                if (removeBtn) {
+                    removeBtn.onclick = () => removeDestinationInput(index + 1);
+                }
             });
-            destinationCount = inputs.length;
         }
 
         function updateAddButtons() {
-            const addButtons = document.querySelectorAll('.add-btn');
-            addButtons.forEach(btn => btn.remove());
+            // Remove all existing add buttons
+            const existingAddButtons = document.querySelectorAll('.add-btn');
+            existingAddButtons.forEach(btn => btn.remove());
             
+            // Add new add button to the last group if we haven't reached the maximum
             if (destinationCount < maxDestinations) {
                 const lastGroup = document.querySelector('#destinationInputs .destination-input-group:last-child');
-                const addBtn = document.createElement('button');
-                addBtn.type = 'button';
-                addBtn.className = 'add-btn';
-                addBtn.textContent = '+ Add';
-                addBtn.onclick = addDestinationInput;
-                lastGroup.appendChild(addBtn);
+                if (lastGroup) {
+                    const addBtn = document.createElement('button');
+                    addBtn.type = 'button';
+                    addBtn.className = 'add-btn';
+                    addBtn.textContent = '+ Add';
+                    addBtn.onclick = addDestinationInput;
+                    lastGroup.appendChild(addBtn);
+                }
+            }
+            
+            // Update remove buttons visibility
+            const removeButtons = document.querySelectorAll('.remove-btn');
+            if (destinationCount === 1) {
+                // Hide remove button if only one input
+                removeButtons.forEach(btn => btn.style.display = 'none');
+            } else {
+                // Show remove buttons if more than one input
+                removeButtons.forEach(btn => btn.style.display = 'inline-block');
             }
         }
+        
+        // Initialize the form state
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAddButtons();
+        });
 
         document.getElementById('formToForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -503,10 +539,10 @@
                     document.getElementById('destinationInputs').innerHTML = `
                         <div class="destination-input-group">
                             <input type="email" name="FROM_TO1" placeholder="Enter destination email address" required>
-                            <button type="button" class="add-btn" onclick="addDestinationInput()">+ Add</button>
                         </div>
                     `;
                     destinationCount = 1;
+                    updateAddButtons();
                 } else {
                     responseDiv.className = 'response error';
                     responseDiv.innerHTML = `
